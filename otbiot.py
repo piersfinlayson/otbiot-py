@@ -87,11 +87,9 @@ def on_message(mqtt, user_data, payload):
     if error:
         mqtt.publish('error:%s' % payload)
 
-
 def on_disconnect(userdata, rc):
     logger.error("MQTT disconnected - exiting")
     exit()
-
 
 def signal_handler(signal_received, frame):
     logger.error("SIGINT caught - exiting")
