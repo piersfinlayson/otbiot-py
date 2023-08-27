@@ -5,13 +5,14 @@ from signal import signal,SIGINT
 from mqtt import Mqtt
 from gpio import Gpio
 from user_config import *
-
-VERSION = 'otbiot-pi v0.0.1a'
+from cmd_tree import otbiot_cmd_tree
+from system import exit, start, running
+from defines import VERSION
 
 MAIN_TIMER = 0.1
 MAIN_LOOP_TIMEOUT = 30
 
-global connected, run, otbiot
+global otbiot
 
 logging.basicConfig(
   level=logging.INFO,
@@ -19,16 +20,13 @@ logging.basicConfig(
     datefmt="%d-%b-%Y %H:%M:%S",
     stream=sys.stdout,
   )
+
 logger=logging.getLogger('main')
 
 class Otbiot:
     def __init__(self, mqtt, gpio):
         self.mqtt = mqtt
         self.gpio = gpio
-
-def exit():
-    global run
-    run = False
 
 def on_connect(mqtt, user_data, flags, rc):
     logger.info("MQTT Connected")
@@ -37,55 +35,39 @@ def on_connect(mqtt, user_data, flags, rc):
 def on_message(mqtt, user_data, payload):
     global otbiot
     logger.info("MQTT message received: %s" % payload)
+    
+    # Find who handles this message
     words = payload.split(':')
+    words_iter = iter(words)
+    branch = otbiot_cmd_tree
     error = True
-    if words[0] == 'gpio':
-        if len(words) > 1:
-            if words[1] in ('get', 'set'):
-                if len(words) > 2:
-                    if words[1] == 'get':
-                        val = otbiot.gpio.get_gpio_state_from_mqtt(words[2])
-                        if val != None:
-                            mqtt.publish('gpio:get:ok:%d' % val)
-                            error = False
-                        else:
-                            logger.warning("Received get for unknown GPIO %s" % payload)
-                    else:
-                        assert(words[1] == 'set')
-                        if len(words) > 3:
-                            rc = otbiot.gpio.set_gpio_state_from_mqtt(words[2], words[3])
-                            if rc:
-                                mqtt.publish(':'.join((words[0],words[1],'ok')))
-                                error = False
-                            else:
-                                logger.warning("Received get for unknown GPIO %s" % payload)
-                        else:
-                            logger.warning("Received malformed gpio set request: %s" % payload)
+    handler = None
+    try:
+        while not handler:
+            word = words_iter.__next__()
+            if word in branch:
+                next_branch = branch[word]
+                if type(next_branch) != dict:
+                    handler = next_branch
                 else:
-                    logger.warning("Received malformed gpio request: %s" % payload)
-            else:
-                logger.warning("Received malformed gpio request: %s" % payload)
-        else:
-            logger.warning("Received malformed gpio request: %s" % payload)
-    elif words[0] == 'version':
-        if (len(words) > 1) and words[1] == 'get':
-            mqtt.publish(':'.join((words[0], VERSION)))
+                    branch = next_branch
+    except StopIteration:
+        pass
+
+    # Handle it
+    if handler:
+        logger.debug("Passing msg %s to handler %s" % (payload, str(handler)))
+        rc, error_str = handler(otbiot, words_iter, words)
+        if rc:
             error = False
         else:
-            logger.warning("Received malformed version request: %s" % payload)
-    elif words[0] == 'ping':
-        logger.info("Received ping request - respond with pong")
-        mqtt.publish('pong')
-        error = False
-    elif words[0] in ('reset', 'reboot', 'restart', 'exit', 'quit'):
-        logger.error("Exiting due to MQTT command")
-        mqtt.publish('ok:%s' % words[0])
-        error = False
-        exit()
+            logger.warning("Handler returned an error %s" % error_str)
     else:
         logger.warning("Unknown MQTT message received %s" % payload)
+        error = True
+        error_str = 'unknown_mqtt_command'
     if error:
-        mqtt.publish('error:%s' % payload)
+        mqtt.publish('error:%s:%s' % (payload, error_str))
 
 def on_disconnect(userdata, rc):
     logger.error("MQTT disconnected - exiting")
@@ -101,14 +83,13 @@ def main():
     
     # Set up logging
     logger.setLevel(logging.INFO)
-    logger.info("Started")
+    logger.info("otbiot-py version %s started on device %s" % (VERSION, MY_CHIP_ID))
     
     # Set up signal handling
     signal(SIGINT, signal_handler)
 
     # Set up GPIOs
     gpio = Gpio(GPIOS)
-    connected = False
     
     # Set up MQTT
     mqtt = Mqtt(MQTT_ADDR, MQTT_PORT, CHIP_IDS)
@@ -118,6 +99,7 @@ def main():
     otbiot = Otbiot(mqtt, gpio)
     
     # Run the main loop, checking if we should exit, as only main thread can exit
+    start()
     run = True
     counter = 0
     while True:
@@ -126,8 +108,8 @@ def main():
         if not mqtt.connected and ((counter * MAIN_TIMER) > MAIN_LOOP_TIMEOUT):
             logger.error("Failed to connect to MQTT broker in %d seconds - exiting" % MAIN_LOOP_TIMEOUT)
             exit()
-        if not run:
-            logger.info("Main thread - have been instructed to exit, so exiting")
+        if not running():
+            logger.info("Main thread has been instructed to exit, so exiting")
             sys.exit(0)
     
 if __name__ == "__main__":

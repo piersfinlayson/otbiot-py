@@ -66,5 +66,21 @@ class Mqtt:
         logger.debug("Mqtt: publish: %s : %s" % (self, msg))
         if not topic:
             topic = MQTT_TOPIC_STATUS % (self.chip_ids[0]) # Always publish using our chip ID, which is the first
-        logger.debug("Mqtt: Publish msg: %s %s" % (topic, msg))
+        logger.info("Mqtt: Publish msg: %s %s" % (topic, msg))
         self.client.publish(topic, msg)
+
+def cmd_mqtt_get_server(otbiot, words_iter, words) -> (bool, str):
+    otbiot.mqtt.publish('mqtt_%s:%s' % (words[2], otbiot.mqtt.addr))
+    return True , ""
+
+def cmd_mqtt_get_port(otbiot, words_iter, words) -> (bool, str):
+    otbiot.mqtt.publish('mqtt_%s:%s' % (words[2], otbiot.mqtt.port))
+    return True , ""
+
+def cmd_mqtt_get_user(otbiot, words_iter, words) -> (bool, str):
+    otbiot.mqtt.publish('mqtt_%s:%s' % (words[2], otbiot.mqtt.username))
+    return True , ""
+
+def cmd_mqtt_get_password(otbiot, words_iter, words) -> (bool, str):
+    otbiot.mqtt.publish('mqtt_%s:%s' % (words[2], otbiot.mqtt.password))
+    return True , ""

@@ -56,5 +56,41 @@ class Gpio:
             rc = True
         return rc
             
-        
-            
+def cmd_gpio_get(otbiot, words_iter, words) -> (bool, str):
+    rc = False
+    error_str = "unknown_error"
+    
+    try:
+        pin = words_iter.__next__()
+    except:
+        return False, "invalid_get_gpio_command"
+
+    val = otbiot.gpio.get_gpio_state_from_mqtt(pin)
+    if val != None:
+        otbiot.mqtt.publish('gpio:get:ok:%d' % val)
+        rc = True
+    else:
+        logger.warning("Received get for unknown GPIO %s" % ':'.join(words))
+        rc = False
+        error_str = "unknown_gpio"
+    
+    return rc, error_str
+
+def cmd_gpio_set(otbiot, words_iter, words) -> (bool, str):
+    rc = False
+    error_str = "unknown_error"
+    
+    try:
+        pin = words_iter.__next__()
+        state = words_iter.__next__()
+    except:
+        return False, "invalid_set_gpio_command"
+
+    rc = otbiot.gpio.set_gpio_state_from_mqtt(pin, state)
+    if rc:
+        otbiot.mqtt.publish(':'.join((words[0],words[1],'ok')))
+    else:
+        logger.warning("Received set for unknown GPIO or invalid state%s " % ':'.join(words))
+        error_str
+   
+    return rc, error_str
