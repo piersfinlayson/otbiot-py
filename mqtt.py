@@ -11,23 +11,25 @@ MQTT_TOPICS_SUBSCRIBE = [
 ]
 
 class Mqtt:
-    def __init__(self, addr, port, chip_ids, username=None, password=None, topics=None):
+    def __init__(self, addr, port, chip_ids, username=None, password=None):
         self.addr=addr
         self.port=port
         self.chip_ids=chip_ids
         self.username=username
         self.password=password
         self.topics=None
-        if topics == None:
-            topics = MQTT_TOPICS_SUBSCRIBE
-        self.client=mqtt.Client(mqtt.MQTTv31)
+        self.client=mqtt.Client(protocol=mqtt.MQTTv31)
         self.connected = False
 
-    def connect(self, on_connect=None, on_disconnect=None, on_message=None, timeout=MQTT_CONNECT_DEFAULT_TIMEOUT):
+    def connect(self, on_connect=None, on_disconnect=None, on_message=None, topics=[], timeout=MQTT_CONNECT_DEFAULT_TIMEOUT):
         logger.debug("Mqtt: connect: %s" % self)
         self.on_connect=on_connect
         self.on_disconnect=on_disconnect
         self.on_message=on_message
+        if len(topics) == 0:
+            self.topics = MQTT_TOPICS_SUBSCRIBE
+        else:
+            self.topics = topics
         self.client.on_connect = self._on_connect
         self.client.on_message = self._on_message
         self.client.on_disconnect = self._on_disconnect
