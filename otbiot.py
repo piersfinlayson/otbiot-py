@@ -1,21 +1,15 @@
 #!/usr/bin/python3
 
 import sys, logging, time
-from signal import signal, SIGINT
-import paho.mqtt.client as mqtt
+from signal import signal,SIGINT
 import RPi.GPIO as GPIO
-
+from mqtt import Mqtt
 from user_config import *
 
 VERSION = 'otbiot-pi v0.0.1a'
 
-MQTT_TOPIC_SYSTEM = "/otb_iot/%s/system"
-MQTT_TOPIC_STATUS = "/otb_iot/%s/status"
-MQTT_TOPICS = [
-    MQTT_TOPIC_SYSTEM,
-]
-MQTT_CONNECT_TIMEOUT = 60
 MAIN_TIMER = 1
+MAIN_LOOP_TIMEOUT = 30
 
 global connected, run
 
@@ -37,13 +31,7 @@ def get_gpio(mqtt_pin):
             return gpio
     return None
 
-def mqtt_publish(mqtt_client, message):
-    topic = MQTT_TOPIC_STATUS % MY_CHIP_ID
-    logger.info("Publish MQTT %s %s" % (topic, message))
-    mqtt_client.publish(topic, message)
-
-def on_message(mqtt_client, user_data, msg):
-    payload = str(msg.payload, 'utf-8')
+def on_message(mqtt, user_data, payload):
     logger.info("MQTT message received: %s" % payload)
     words = payload.split(':')
     if words[0] == 'gpio':
@@ -60,7 +48,7 @@ def on_message(mqtt_client, user_data, msg):
                                 val = 1
                             else:
                                 val = 0
-                            mqtt_publish(mqtt_client, 'gpio:get:ok:%d' % val)
+                            mqtt.publish('gpio:get:ok:%d' % val)
                         else:
                             assert(words[1] == 'set')
                             if len(words) > 3:
@@ -74,7 +62,7 @@ def on_message(mqtt_client, user_data, msg):
                                 if state != None:
                                     logger.info("Set state of BCM pin %d to %s" % (bcm_pin, words[3]))
                                     GPIO.output(bcm_pin, state)
-                                    mqtt_publish(mqtt_client, ':'.join((words[0],words[1],'ok')))
+                                    mqtt.publish(':'.join((words[0],words[1],'ok')))
                                 else:
                                     logger.warning("Received unexpected gpio set request: %s" % payload)
                             else:
@@ -89,41 +77,21 @@ def on_message(mqtt_client, user_data, msg):
             logger.warning("Received malformed gpio request: %s" % payload)
     elif words[0] == 'version':
         if (len(words) > 1) and words[1] == 'get':
-            mqtt_publish(mqtt_client, ':'.join((words[0], VERSION)))
+            mqtt.publish(':'.join((words[0], VERSION)))
         else:
             logger.warning("Received malformed version request: %s" % payload)
     elif words[0] == 'ping':
         logger.info("Received ping request - respond with pong")
-        mqtt_publish(mqtt_client, 'pong')
+        mqtt.publish('pong')
     elif words[0] in ('reset', 'reboot', 'restart', 'exit', 'quit'):
         logger.error("Exiting due to MQTT command")
         exit()
     else:
         logger.warning("Unknown MQTT message received %s" % payload)
 
-def on_connect(mqtt_client, userdata, flags, rc):
-    global connected
-    logger.info("MQTT connected")
-    for id in CHIP_IDS:
-        for topic in MQTT_TOPICS:
-            topic = topic % id
-            logger.info("Subscribe to topic %s" % topic)
-            mqtt_client.subscribe(topic)
-    mqtt_publish(mqtt_client, 'booted:slot:0')
-    connected = True
-
-def on_disconnect(mqtt_client, userdata, rc):
+def on_disconnect(userdata, rc):
     logger.error("MQTT disconnected - exiting")
     exit()
-
-def mqtt_client_connect():
-    mqtt_client = mqtt.Client(protocol=mqtt.MQTTv31)
-    mqtt_client.on_connect = on_connect
-    mqtt_client.on_message = on_message
-    mqtt_client.on_disconnect = on_disconnect
-    mqtt_client.connect_async(MQTT_ADDR, MQTT_PORT, MQTT_CONNECT_TIMEOUT)
-    mqtt_client.loop_start()
-    return mqtt_client
 
 def setup_gpios():
   GPIO.setwarnings(False)
@@ -143,14 +111,15 @@ def main():
     signal(SIGINT, signal_handler)
     setup_gpios()
     connected = False
-    mqtt_client = mqtt_client_connect()
+    mqtt = Mqtt(MQTT_ADDR, MQTT_PORT, CHIP_IDS)
+    mqtt.connect(None, on_disconnect, on_message)
     run = True
     counter = 0
     while True:
         time.sleep(MAIN_TIMER)
         counter += 1
-        if not connected and ((counter * MAIN_TIMER) > MQTT_CONNECT_TIMEOUT):
-            logger.error("Failed to connect to MQTT broker in %d seconds - exiting" % MQTT_CONNECT_TIMEOUT)
+        if not mqtt.connected and ((counter * MAIN_TIMER) > MAIN_LOOP_TIMEOUT):
+            logger.error("Failed to connect to MQTT broker in %d seconds - exiting" % MAIN_LOOP_TIMEOUT)
             exit()
         if not run:
             logger.info("Main thread - have been instructed to exit, so exiting")
