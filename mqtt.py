@@ -68,8 +68,3 @@ class Mqtt:
             topic = MQTT_TOPIC_STATUS % (self.chip_ids[0]) # Always publish using our chip ID, which is the first
         logger.debug("Mqtt: Publish msg: %s %s" % (topic, msg))
         self.client.publish(topic, msg)
-
-
-    
-
-
