@@ -15,6 +15,10 @@ from system import (
 )
 
 otbiot_cmd_tree = {
+    'gpio': {
+        'get': cmd_gpio_get,
+        'set': cmd_gpio_set,
+    },
     'get': {
 #        'sensor': {
 #                'temp': {
@@ -77,6 +81,9 @@ otbiot_cmd_tree = {
     },
     'set': {
         'gpio': cmd_gpio_set,
+    },
+    'version': {
+        'get': cmd_system_get_version,
     },
     'ping':cmd_system_ping,
     'reset':cmd_system_reset,
