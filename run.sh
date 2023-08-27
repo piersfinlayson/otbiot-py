@@ -1,4 +1,5 @@
 #!/usr/bin/bash
+set -e
 
 IMAGE_NAME="otbiot-py"
 CONT_NAME="otbiot-py"

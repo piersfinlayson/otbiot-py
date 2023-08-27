@@ -85,10 +85,16 @@ otbiot_cmd_tree = {
     'version': {
         'get': cmd_system_get_version,
     },
+    'trigger':{
+        'ping':cmd_system_ping,
+        'reset':cmd_system_reset,
+        'reboot':cmd_system_reset,
+        'restart':cmd_system_reset,
+        'reboot':cmd_system_reset,
+        'exit':cmd_system_reset,
+        'quit':cmd_system_reset,
+    },
     'ping':cmd_system_ping,
     'reset':cmd_system_reset,
-    'restart':cmd_system_reset,
     'reboot':cmd_system_reset,
-    'exit':cmd_system_reset,
-    'quit':cmd_system_reset,
 }

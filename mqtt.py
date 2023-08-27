@@ -6,8 +6,14 @@ logger=logging.getLogger('mqtt')
 MQTT_CONNECT_DEFAULT_TIMEOUT = 60
 MQTT_TOPIC_STATUS = "/otb_iot/%s/status"
 MQTT_TOPIC_SYSTEM = "/otb_iot/%s/system"
+MQTT_TOPIC_NEW_LISTEN = "/otb_iot/%s"
+MQTT_TOPIC_ESPI_NEW_LISTEN = "/espi/%s"
+MQTT_TOPIC_ESPI_NEW_LISTEN_LONG = "/espi////%s"
 MQTT_TOPICS_SUBSCRIBE = [
     MQTT_TOPIC_SYSTEM,
+    MQTT_TOPIC_NEW_LISTEN,
+    MQTT_TOPIC_ESPI_NEW_LISTEN,
+    MQTT_TOPIC_ESPI_NEW_LISTEN_LONG,
 ]
 
 class Mqtt:
