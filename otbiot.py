@@ -4,7 +4,7 @@ import sys, logging, time
 from signal import signal,SIGINT
 from mqtt import Mqtt
 from gpio import Gpio
-from user_config import *
+from config import *
 from cmd_tree import otbiot_cmd_tree
 from system import exit, start, running
 from defines import VERSION
@@ -83,7 +83,7 @@ def main():
     
     # Set up logging
     logger.setLevel(logging.INFO)
-    logger.info("otbiot-py version %s started on device %s" % (VERSION, MY_CHIP_ID))
+    logger.info("otbiot-py version %s started on device %s" % (VERSION, DEVICE_CHIP_ID))
     
     # Set up signal handling
     signal(SIGINT, signal_handler)

@@ -21,7 +21,7 @@ ssh $HOSTNAME "mkdir -p $REMOTE_DIR"
 scp *.sh *.py *.txt Dockerfile $HOSTNAME:$REMOTE_DIR
 
 if [ $HOSTNAME != "heating2" ]; then
-    echo "Modifying user_config.py - replacing chip id d76a7d with $HOSTNAME"
-    ssh $HOSTNAME sed -i -- 's/d76a7d/'"$HOSTNAME"'/g' /home/pdf/container-data/otbiot-py/user_config.py
+    echo "Modifying config_device.py - replacing chip id d76a7d with $HOSTNAME"
+    ssh $HOSTNAME sed -i -- 's/d76a7d/'"$HOSTNAME"'/g' /home/pdf/container-data/otbiot-py/config_device.py
 fi
 echo "Done"
