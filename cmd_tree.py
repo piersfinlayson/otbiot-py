@@ -13,6 +13,9 @@ from system import (
     cmd_system_ping,
     cmd_system_reset,
 )
+from os_handler import (
+    cmd_os_unsupported,
+)
 
 otbiot_cmd_tree = {
     'gpio': {
@@ -33,38 +36,40 @@ otbiot_cmd_tree = {
 #                } ,
 #        },
         'gpio': cmd_gpio_get,
-#        'config': {
+        'config': {
 #            'all':config_get_all,
 #            'gpio': {
 #                'pin': {
 #                    'state':config_get_gpio_pin_state,
 #                }
 #            },
-#            'serial': {
-#                'enable':,
-#                'rx':,
-#                'rx_pin':,
-#                'rxpin':,
-#                'tx':,
-#                'tx_pin':,
-#                'txpin':,
-#                'baud':,
-#                'baudrate':,
-#                'baud_rate':,
-#                'bit_rate':,
-#                'bitrate':,
-#                'speed':,
-#                'stopbit':,
-#                'stop_bit':,
-#                'parity':,
-#                'mezz': {
-#                    'uart':,
-#                },
-#            },
-#        'wifi': {
-#            'ssid':,
-#            'password':,
-#            'pass':,
+            'serial': {
+                'enable':cmd_os_unsupported,
+                'rx':cmd_os_unsupported,
+                'rx_pin':cmd_os_unsupported,
+                'rxpin':cmd_os_unsupported,
+                'tx':cmd_os_unsupported,
+                'tx_pin':cmd_os_unsupported,
+                'txpin':cmd_os_unsupported,
+                'baud':cmd_os_unsupported,
+                'baudrate':cmd_os_unsupported,
+                'baud_rate':cmd_os_unsupported,
+                'bit_rate':cmd_os_unsupported,
+                'bitrate':cmd_os_unsupported,
+                'speed':cmd_os_unsupported,
+                'stopbit':cmd_os_unsupported,
+                'stop_bit':cmd_os_unsupported,
+                'parity':cmd_os_unsupported,
+                'mezz': {
+                    'uart':cmd_os_unsupported,
+                },
+            },
+        },
+        'wifi': {
+            'ssid':cmd_os_unsupported,
+            'password':cmd_os_unsupported,
+            'pass':cmd_os_unsupported,
+        },
         'version': cmd_system_get_version,
         'mqtt': {
             'server':cmd_mqtt_get_server,
